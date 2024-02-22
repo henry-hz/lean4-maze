@@ -34,40 +34,40 @@ syntax "│" game_cell* "│\n" : game_row
 
 syntax:max game_top_row game_row* game_bottom_row : term
 
-inductive CellContents where
-  | empty  : CellContents
-  | wall   : CellContents
-  | player : CellContents
+inductive Cell where
+  | empty  : Cell
+  | wall   : Cell
+  | player : Cell
 
-def update_state_with_row_aux : Nat → Nat → List CellContents → GameState → GameState
+def update_with_row_aux : Nat → Nat → List Cell → GameState → GameState
 |             _,             _, [], oldState => oldState
 | currentRowNum, currentColNum, cell::contents, oldState =>
-    let oldState' := update_state_with_row_aux currentRowNum (currentColNum+1) contents oldState
+    let oldState' := update_with_row_aux currentRowNum (currentColNum+1) contents oldState
     match cell with
-    | CellContents.empty => oldState'
-    | CellContents.wall => {oldState' .. with
+    | Cell.empty => oldState'
+    | Cell.wall => {oldState' .. with
                             walls := ⟨currentColNum,currentRowNum⟩::oldState'.walls}
-    | CellContents.player => {oldState' .. with
+    | Cell.player => {oldState' .. with
                               position := ⟨currentColNum,currentRowNum⟩}
 
-def update_state_with_row : Nat → List CellContents → GameState → GameState
-| currentRowNum, rowContents, oldState => update_state_with_row_aux currentRowNum 0 rowContents oldState
+def update_with_row : Nat → List Cell → GameState → GameState
+| currentRowNum, rowContents, oldState => update_with_row_aux currentRowNum 0 rowContents oldState
 
 -- size, current row, remaining cells -> gamestate
-def game_state_from_cells_aux : Coords → Nat → List (List CellContents) → GameState
+def game_state_from_cells_aux : Coords → Nat → List (List Cell) → GameState
 | size, _, [] => ⟨size, ⟨0,0⟩, []⟩
 | size, currentRow, row::rows =>
         let prevState := game_state_from_cells_aux size (currentRow + 1) rows
-        update_state_with_row currentRow row prevState
+        update_with_row currentRow row prevState
 
 -- size, remaining cells -> gamestate
-def game_state_from_cells : Coords → List (List CellContents) → GameState
+def game_state_from_cells : Coords → List (List Cell) → GameState
 | size, cells => game_state_from_cells_aux size 0 cells
 
 def termOfCell : Lean.TSyntax `game_cell → Lean.MacroM (Lean.TSyntax `term)
-| `(game_cell| ░) => `(CellContents.empty)
-| `(game_cell| ▓) => `(CellContents.wall)
-| `(game_cell| @) => `(CellContents.player)
+| `(game_cell| ░) => `(Cell.empty)
+| `(game_cell| ▓) => `(Cell.wall)
+| `(game_cell| @) => `(Cell.player)
 | _ => Lean.Macro.throwError "unknown game cell"
 
 def termOfGameRow : Nat → Lean.TSyntax `game_row → Lean.MacroM (Lean.TSyntax `term)
@@ -387,5 +387,15 @@ example : can_escape maze3 :=
  by west
     west
     west
+    south
+    south
+    south
+    south
+    east
+    east
+    north
+    north
+    east
+    east
     south
     sorry -- can you finish the proof?
